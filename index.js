@@ -10,7 +10,7 @@ const server = http.createServer(app);
 // Create a Socket.IO instance and bind it to the server
 const io = new Server(server, {
   cors: {
-    origin: "*", // You can specify allowed origins here for CORS
+    origin: ["http://localhost:3000", "*"], // You can specify allowed origins here for CORS
     methods: ["GET", "POST"],
   },
 });
@@ -28,7 +28,7 @@ io.on("connection", (socket) => {
   socket.on("message", (data) => {
     console.log("Message received:", data);
     // Send a message to the client
-    socket.emit("message", `Server received: ${data}`);
+    socket.emit("message", `${data}`);
   });
 
   // Handle user disconnection
