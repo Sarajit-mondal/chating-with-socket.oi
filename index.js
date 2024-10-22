@@ -1,10 +1,19 @@
 // index.js
 const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
-
+const connectDB = require("./config/connectDB");
 // Create an Express app
 const app = express();
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "*"],
+    credentials: true,
+  })
+);
+
 const server = http.createServer(app);
 
 // Create a Socket.IO instance and bind it to the server
@@ -36,6 +45,9 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 });
+
+// connectDB
+connectDB();
 
 // Start the server
 const PORT = 5000;
