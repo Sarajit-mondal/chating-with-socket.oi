@@ -4,7 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 const http = require("http");
 const { Server } = require("socket.io");
-const connectDB = require("./config/connectDB.js");
+const connectDB = require("./server/config/connectDB.js");
 // Create an Express app
 const app = express();
 app.use(
@@ -13,6 +13,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(express.json())
 
 const server = http.createServer(app);
 
