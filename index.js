@@ -1,50 +1,22 @@
-// index.js
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const http = require("http");
-const { Server } = require("socket.io");
 const connectDB = require("./server/config/connectDB.js");
+const { app, server } = require("./server/socket/index");
+
 // Create an Express app
-const app = express();
+// const app = express();
 app.use(
   cors({
     origin: ["http://localhost:3000", "*"],
     credentials: true,
   })
 );
-app.use(express.json())
-
-const server = http.createServer(app);
-
-// Create a Socket.IO instance and bind it to the server
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", "*"], // You can specify allowed origins here for CORS
-    methods: ["GET", "POST"],
-  },
-});
+app.use(express.json());
 
 // Serve a basic endpoint for testing
 app.get("/", (req, res) => {
   res.send("Socket.IO Server is running");
-});
-
-// Handle connection and events
-io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
-
-  // Listen for a custom event
-  socket.on("message", (data) => {
-    console.log("Message received:", data);
-    // Send a message to the client
-    socket.emit("message", `${data}`);
-  });
-
-  // Handle user disconnection
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
 });
 
 // connectDB
