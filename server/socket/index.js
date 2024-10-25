@@ -23,54 +23,64 @@ const onlineUser = new Set();
 // Handle connection and events
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
-  // const user = socket.handshake.auth.user;
+  const user = socket.handshake.auth.user;
 
+  // create a room and join room 
+  socket.join(user);
+  onlineUser.add(user?.toString());
 
-  // convarsection
-  socket.on('new message',async(data)=>{
-    // check conversation is available both user
+  io.emit("onlineUser", Array.from(onlineUser));
+
+  // Listen for a new message event
+  socket.on("new message", async (data) => {
+    // Find if conversation exists between sender and receiver
     let conversation = await ConversationModel.findOne({
-      '$or' : [
-        {sender:data?.sender,reciver : data?.reciver},
-        {sender:data?.reciver,reciver : data?.sender}  
-      ]
-    })
-    // conversation is not available
-    if(!conversation){
-      const createConversation = await ConversationModel({
-        sender:data?.sender,
-        reciver : data.reciver,
+      $or: [
+        { sender: data?.sender, reciver: data?.reciver },
+        { sender: data?.reciver, reciver: data?.sender },
+      ],
+    });
 
-      })
-      conversation = await createConversation.save()
+    // If conversation doesn't exist, create one
+    if (!conversation) {
+      const createConversation = new ConversationModel({
+        sender: data?.sender,
+        reciver: data?.reciver,
+      });
+      conversation = await createConversation.save();
     }
+
+    // Save the message to the database
     const message = new MessageModel({
-      text : data?.text,
-      imageUrl: data.imageUrl,
+      text: data?.text,
+      imageUrl: data?.imageUrl,
       videoUrl: data?.videoUrl,
-      msgByUserId : data?.msgByUserId
+      msgByUserId: data?.msgByUserId,
+    });
+    const savedMessage = await message.save();
+
+    // Update conversation with the new message
+    await ConversationModel.updateOne(
+      { _id: conversation._id },
+      {
+        $push: { messages: savedMessage?._id },
+      }
+    );
+
+    // Fetch updated conversation with populated messages
+    const updatedConversationSender = await ConversationModel.findOne({
+      $or: [
+        { sender: data?.sender, reciver: data?.reciver },
+        { sender: data?.reciver, reciver: data?.sender },
+      ],
     })
-   const saveMessage =  await message.save()
+      .populate("messages")
+      .sort({ updatedAt: -1 });
 
-
-
- const updateConversation = await ConversationModel.updateOne({_id : conversation._id},{
-  '$push' : {messages : saveMessage?._id}
- })
-
-
- const getConversation = await ConversationModel.findOne({
-  '$or' : [
-        {sender:data?.sender,reciver : data?.reciver},
-        {sender:data?.reciver,reciver : data?.sender}  
-      ]
- }).populate('messages').sort({updatedAt: -1})
-
- console.log("getConversation",getConversation)
-  
-  })
-  // convarsection
-
+    // Emit updated conversation data to both sender and receiver
+    io.to(data?.sender).emit("getMessage", updatedConversationSender);
+    io.to(data.reciver).emit("getMessage", updatedConversationSender);
+  });
 
   // convarsection
 
