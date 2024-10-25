@@ -18,6 +18,8 @@ const io = new Server(server, {
   },
 });
 
+const onlineUser = new Set();
+
 // Handle connection and events
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
