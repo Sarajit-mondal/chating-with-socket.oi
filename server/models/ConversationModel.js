@@ -30,12 +30,12 @@ const conversationSehema = new mongoose.Schema(
     sender: {
       type: mongoose.Schema.ObjectId,
       return: true,
-      ref: "User",
+      ref: 'User',
     },
     reciver: {
       type: mongoose.Schema.ObjectId,
       return: true,
-      ref: "User",
+      ref: 'User',
     },
     messages: [
       {

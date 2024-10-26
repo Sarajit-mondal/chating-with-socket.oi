@@ -6,6 +6,7 @@ const {
   MessageModel,
 } = require("../models/ConversationModel");
 const app = express();
+const User = require('../models/userSchema');
 
 // socket connection
 const server = http.createServer(app);
@@ -33,6 +34,7 @@ io.on("connection", (socket) => {
 
   // send all user and receiver messagess
   socket.on("message Page", async (data) => {
+   if(data?.sender && data?.reciver){
     const messagesUsersAndReciver = await ConversationModel.findOne({
       $or: [
         { sender: data?.sender, reciver: data?.reciver },
@@ -43,6 +45,7 @@ io.on("connection", (socket) => {
       .sort({ updatedAt: -1 });
 
     socket.emit("getMessage", messagesUsersAndReciver);
+   }
   });
   // send all user and receiver messagess
 
@@ -99,29 +102,44 @@ io.on("connection", (socket) => {
 
   // send current Users conversation into sidebar
   socket.on("sidebar", async (conversationId) => {
-    console.log("conversationId", conversationId);
-    const currentUserConversation = await ConversationModel.find({
-      $or: [{ sender: conversationId }, { receiver: conversationId }],
-    })
-      .sort({ updatedAt: -1 })
-      .populate("messages")
-      .populate("sender")
-      .populate("receiver");
-    const conversation = currentUserConversation.map((conv) => {
-      const countUnseenMsg = conv.messages.reduce(
-        (prev, curr) => prev + (curr.seen ? 0 : 1),
-        0
-      );
-      return {
-        _id: conv._id,
-        sender: conv.sender,
-        receiver: conv.receiver,
-        UnseenMsg: countUnseenMsg,
-        lastMsg: conv.messages[conv?.messages?.length - 1],
-      };
-    });
-    socket.emit("conversation", conversation);
+    if (conversationId) {
+      try {
+        // Retrieve the conversations for the current user
+        const currentUserConversation = await ConversationModel.find({
+          $or: [{ sender: conversationId }, { receiver: conversationId }],
+        })
+          .sort({ updatedAt: -1 })
+          .populate("sender")
+          .populate("reciver")
+          .populate("messages")
+  
+        // Map conversations to the desired structure
+        const conversation = currentUserConversation.map((conv) => {
+          const unseenMsgCount = conv.messages?.reduce(
+            (prev, curr) => prev + (curr.seen ? 0 : 1),
+            0
+          ) || 0;
+  
+          return {
+            _id: conv._id,
+            sender: conv.sender,
+            receiver: conv.receiver,
+            unseenMsg: unseenMsgCount,
+            lastMsg: conv.messages?.[conv.messages.length - 1] || null,
+          };
+        });
+        
+  
+        // Emit the conversation data back to the client
+        socket.emit("conversation", currentUserConversation);
+        console.log(conversation)
+      } catch (error) {
+        console.error("Error fetching conversations:", error);
+        socket.emit("error", "An error occurred while fetching conversations.");
+      }
+    }
   });
+  
 
   // Handle user disconnection
   socket.on("disconnect", () => {
