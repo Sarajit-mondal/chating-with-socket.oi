@@ -25,11 +25,26 @@ io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
   const user = socket.handshake.auth.user;
 
-  // create a room and join room 
+  // create a room and join room
   socket.join(user);
   onlineUser.add(user?.toString());
 
   io.emit("onlineUser", Array.from(onlineUser));
+
+  // send all user and receiver messagess
+  socket.on("message Page", async (data) => {
+    const messagesUsersAndReciver = await ConversationModel.findOne({
+      $or: [
+        { sender: data?.sender, reciver: data?.reciver },
+        { sender: data?.reciver, reciver: data?.sender },
+      ],
+    })
+      .populate("messages")
+      .sort({ updatedAt: -1 });
+
+    socket.emit("getMessage", messagesUsersAndReciver);
+  });
+  // send all user and receiver messagess
 
   // Listen for a new message event
   socket.on("new message", async (data) => {
@@ -82,7 +97,31 @@ io.on("connection", (socket) => {
     io.to(data.reciver).emit("getMessage", updatedConversationSender);
   });
 
-  // convarsection
+  // send current Users conversation into sidebar
+  socket.on("sidebar", async (conversationId) => {
+    console.log("conversationId", conversationId);
+    const currentUserConversation = await ConversationModel.find({
+      $or: [{ sender: conversationId }, { receiver: conversationId }],
+    })
+      .sort({ updatedAt: -1 })
+      .populate("messages")
+      .populate("sender")
+      .populate("receiver");
+    const conversation = currentUserConversation.map((conv) => {
+      const countUnseenMsg = conv.messages.reduce(
+        (prev, curr) => prev + (curr.seen ? 0 : 1),
+        0
+      );
+      return {
+        _id: conv._id,
+        sender: conv.sender,
+        receiver: conv.receiver,
+        UnseenMsg: countUnseenMsg,
+        lastMsg: conv.messages[conv?.messages?.length - 1],
+      };
+    });
+    socket.emit("conversation", conversation);
+  });
 
   // Handle user disconnection
   socket.on("disconnect", () => {
