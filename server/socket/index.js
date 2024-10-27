@@ -14,7 +14,7 @@ const server = http.createServer(app);
 // Create a Socket.IO instance and bind it to the server
 const io = new Server(server, {
   cors: {
-    origin: ["https://chat-vibe-ashy.vercel.app","https://chatvibe-s8eu.onrender.com", "http://localhost:3000", "*"], // You can specify allowed origins here for CORS
+    origin: ["https://chat-vibe-ashy.vercel.app","https://chatvibe-s8eu.onrender.com", "http://localhost:3001", "http://localhost:3001", "*"], // You can specify allowed origins here for CORS
     methods: ["GET", "POST"],
   },
 });
