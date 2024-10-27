@@ -8,7 +8,7 @@ const { app, server } = require("./server/socket/index");
 // const app = express();
 app.use(
   cors({
-    origin: ["https://chat-vibe-ashy.vercel.app", "http://localhost:3000", "*"],
+    origin: ["https://chat-vibe-ashy.vercel.app", "http://localhost:3000","https://chatvibe-s8eu.onrender.com" ,"*"],
     credentials: true,
   })
 );
