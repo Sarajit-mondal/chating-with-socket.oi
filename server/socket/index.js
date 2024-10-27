@@ -32,7 +32,7 @@ io.on("connection", (socket) => {
 
   io.emit("onlineUser", Array.from(onlineUser));
 
-  // send all user and receiver messagess
+  // send all user and reciver messagess
   socket.on("message Page", async (data) => {
    if(data?.sender && data?.reciver){
     const messagesUsersAndReciver = await ConversationModel.findOne({
@@ -47,11 +47,11 @@ io.on("connection", (socket) => {
     socket.emit("getMessage", messagesUsersAndReciver);
    }
   });
-  // send all user and receiver messagess
+  // send all user and reciver messagess
 
   // Listen for a new message event
   socket.on("new message", async (data) => {
-    // Find if conversation exists between sender and receiver
+    // Find if conversation exists between sender and reciver
     let conversation = await ConversationModel.findOne({
       $or: [
         { sender: data?.sender, reciver: data?.reciver },
@@ -95,51 +95,48 @@ io.on("connection", (socket) => {
       .populate("messages")
       .sort({ updatedAt: -1 });
 
-    // Emit updated conversation data to both sender and receiver
+    // Emit updated conversation data to both sender and reciver
     io.to(data?.sender).emit("getMessage", updatedConversationSender);
     io.to(data.reciver).emit("getMessage", updatedConversationSender);
   });
 
-  // send current Users conversation into sidebar
-  socket.on("sidebar", async (conversationId) => {
-    if (conversationId) {
-      try {
-        // Retrieve the conversations for the current user
-        const currentUserConversation = await ConversationModel.find({
-          $or: [{ sender: conversationId }, { receiver: conversationId }],
-        })
-          .sort({ updatedAt: -1 })
-          .populate("sender")
-          .populate("reciver")
-          .populate("messages")
-  
-        // Map conversations to the desired structure
-        const conversation = currentUserConversation.map((conv) => {
-          const unseenMsgCount = conv.messages?.reduce(
-            (prev, curr) => prev + (curr.seen ? 0 : 1),
-            0
-          ) || 0;
-  
-          return {
-            _id: conv._id,
-            sender: conv.sender,
-            receiver: conv.receiver,
-            unseenMsg: unseenMsgCount,
-            lastMsg: conv.messages?.[conv.messages.length - 1] || null,
-          };
-        });
-        
-  
-        // Emit the conversation data back to the client
-        socket.emit("conversation", currentUserConversation);
-        console.log(conversation)
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
-        socket.emit("error", "An error occurred while fetching conversations.");
-      }
+// send current Users conversation into sidebar
+socket.on("sidebar", async (conversationId) => {
+  if (conversationId) {
+    try {
+      // Retrieve the conversations for the current user
+      const currentUserConversation = await ConversationModel.find({
+        $or: [{ sender: conversationId }, { reciver: conversationId }],
+      })
+        .sort({ updatedAt: -1 })
+        .populate("sender")
+        .populate("reciver") // Typo corrected from "reciver" to "reciver"
+        .populate("messages");
+
+      // Map conversations to the desired structure
+      const conversation = currentUserConversation.map((conv) => {
+        const unseenMsgCount =
+          conv.messages?.reduce((prev, curr) => prev + (curr.seen ? 0 : 1), 0) ||
+          0;
+
+        return {
+          _id: conv._id,
+          sender: conv?.sender,
+          reciver: conv?.reciver,
+          unseenMsg: unseenMsgCount,
+          lastMsg: conv.messages?.[conv.messages.length - 1] || null,
+        };
+      });
+
+      // Emit the mapped conversation data back to the client
+      socket.emit("conversation", conversation);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      socket.emit("error", "An error occurred while fetching conversations.");
     }
-  });
-  
+  }
+});
+
 
   // Handle user disconnection
   socket.on("disconnect", () => {
