@@ -6,7 +6,7 @@ const {
   MessageModel,
 } = require("../models/ConversationModel");
 const app = express();
-const User = require('../models/userSchema');
+const User = require("../models/userSchema");
 
 // socket connection
 const server = http.createServer(app);
@@ -14,7 +14,7 @@ const server = http.createServer(app);
 // Create a Socket.IO instance and bind it to the server
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "*"], // You can specify allowed origins here for CORS
+    origin: ["https://chat-vibe-ashy.vercel.app", "http://localhost:3000", "*"], // You can specify allowed origins here for CORS
     methods: ["GET", "POST"],
   },
 });
@@ -34,18 +34,18 @@ io.on("connection", (socket) => {
 
   // send all user and receiver messagess
   socket.on("message Page", async (data) => {
-   if(data?.sender && data?.reciver){
-    const messagesUsersAndReciver = await ConversationModel.findOne({
-      $or: [
-        { sender: data?.sender, reciver: data?.reciver },
-        { sender: data?.reciver, reciver: data?.sender },
-      ],
-    })
-      .populate("messages")
-      .sort({ updatedAt: -1 });
+    if (data?.sender && data?.reciver) {
+      const messagesUsersAndReciver = await ConversationModel.findOne({
+        $or: [
+          { sender: data?.sender, reciver: data?.reciver },
+          { sender: data?.reciver, reciver: data?.sender },
+        ],
+      })
+        .populate("messages")
+        .sort({ updatedAt: -1 });
 
-    socket.emit("getMessage", messagesUsersAndReciver);
-   }
+      socket.emit("getMessage", messagesUsersAndReciver);
+    }
   });
   // send all user and receiver messagess
 
@@ -111,15 +111,16 @@ io.on("connection", (socket) => {
           .sort({ updatedAt: -1 })
           .populate("sender")
           .populate("reciver")
-          .populate("messages")
-  
+          .populate("messages");
+
         // Map conversations to the desired structure
         const conversation = currentUserConversation.map((conv) => {
-          const unseenMsgCount = conv.messages?.reduce(
-            (prev, curr) => prev + (curr.seen ? 0 : 1),
-            0
-          ) || 0;
-  
+          const unseenMsgCount =
+            conv.messages?.reduce(
+              (prev, curr) => prev + (curr.seen ? 0 : 1),
+              0
+            ) || 0;
+
           return {
             _id: conv._id,
             sender: conv.sender,
@@ -128,18 +129,16 @@ io.on("connection", (socket) => {
             lastMsg: conv.messages?.[conv.messages.length - 1] || null,
           };
         });
-        
-  
+
         // Emit the conversation data back to the client
         socket.emit("conversation", currentUserConversation);
-        console.log(conversation)
+        console.log(conversation);
       } catch (error) {
         console.error("Error fetching conversations:", error);
         socket.emit("error", "An error occurred while fetching conversations.");
       }
     }
   });
-  
 
   // Handle user disconnection
   socket.on("disconnect", () => {
