@@ -14,8 +14,15 @@ const server = http.createServer(app);
 // Create a Socket.IO instance and bind it to the server
 const io = new Server(server, {
   cors: {
-    origin: ["https://chat-vibe-ashy.vercel.app", "http://localhost:3000", "*"], // You can specify allowed origins here for CORS
+    origin: [
+      "https://chat-vibe-ashy.vercel.app/",
+      "https://chatvibe-s8eu.onrender.com",
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "*",
+    ], // You can specify allowed origins here for CORS
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -32,7 +39,7 @@ io.on("connection", (socket) => {
 
   io.emit("onlineUser", Array.from(onlineUser));
 
-  // send all user and receiver messagess
+  // send all user and reciver messagess
   socket.on("message Page", async (data) => {
     if (data?.sender && data?.reciver) {
       const messagesUsersAndReciver = await ConversationModel.findOne({
@@ -47,11 +54,11 @@ io.on("connection", (socket) => {
       socket.emit("getMessage", messagesUsersAndReciver);
     }
   });
-  // send all user and receiver messagess
+  // send all user and reciver messagess
 
   // Listen for a new message event
   socket.on("new message", async (data) => {
-    // Find if conversation exists between sender and receiver
+    // Find if conversation exists between sender and reciver
     let conversation = await ConversationModel.findOne({
       $or: [
         { sender: data?.sender, reciver: data?.reciver },
@@ -95,7 +102,7 @@ io.on("connection", (socket) => {
       .populate("messages")
       .sort({ updatedAt: -1 });
 
-    // Emit updated conversation data to both sender and receiver
+    // Emit updated conversation data to both sender and reciver
     io.to(data?.sender).emit("getMessage", updatedConversationSender);
     io.to(data.reciver).emit("getMessage", updatedConversationSender);
   });
@@ -106,7 +113,7 @@ io.on("connection", (socket) => {
       try {
         // Retrieve the conversations for the current user
         const currentUserConversation = await ConversationModel.find({
-          $or: [{ sender: conversationId }, { receiver: conversationId }],
+          $or: [{ sender: conversationId }, { reciver: conversationId }],
         })
           .sort({ updatedAt: -1 })
           .populate("sender")
@@ -123,16 +130,15 @@ io.on("connection", (socket) => {
 
           return {
             _id: conv._id,
-            sender: conv.sender,
-            receiver: conv.receiver,
+            sender: conv?.sender,
+            reciver: conv?.reciver,
             unseenMsg: unseenMsgCount,
             lastMsg: conv.messages?.[conv.messages.length - 1] || null,
           };
         });
 
-        // Emit the conversation data back to the client
-        socket.emit("conversation", currentUserConversation);
-        console.log(conversation);
+        // Emit the mapped conversation data back to the client
+        socket.emit("conversation", conversation);
       } catch (error) {
         console.error("Error fetching conversations:", error);
         socket.emit("error", "An error occurred while fetching conversations.");
