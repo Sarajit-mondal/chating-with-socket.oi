@@ -16,6 +16,7 @@ const io = new Server(server, {
   cors: {
     origin: ["https://chat-vibe-ashy.vercel.app/","https://chatvibe-s8eu.onrender.com", "http://localhost:3000", "http://localhost:3001", "*"], // You can specify allowed origins here for CORS
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
