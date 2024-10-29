@@ -11,16 +11,22 @@ const User = require("../models/userSchema");
 // socket connection
 const server = http.createServer(app);
 
-// Create a Socket.IO instance and bind it to the server
+// Define allowed origins based on environment
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://chat-vibe-ashy.vercel.app"]
+    : ["http://localhost:3000", "http://localhost:3001"];
+
+// Configure Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: [
-      "https://chat-vibe-ashy.vercel.app/",
-      "https://chatvibe-s8eu.onrender.com",
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "*",
-    ], // You can specify allowed origins here for CORS
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
